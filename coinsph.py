@@ -3,7 +3,7 @@ import urllib
 import json
 from pprint import pprint
 
-from secrets import TOKEN
+from cph.secrets import TOKEN
 
 # Hardcoded keys to reduce processing load from extracting it on the
 # response.
@@ -24,7 +24,7 @@ def get_crypto_payments(id=None, *args, **kwargs):
         endpoint += f'/{id}/'
     else:
         if kwargs.get('page'):
-            args = dict(page=kwargs.get('page'),
+            args = dict(page=kwargs.get('page', 1),
                         per_page=kwargs.get('per_page', 50))
             endpoint = endpoint + '/?' + urllib.parse.urlencode(args)
     headers = {
