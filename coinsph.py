@@ -23,10 +23,9 @@ def get_crypto_payments(id=None, *args, **kwargs):
     if id:
         endpoint += f'/{id}/'
     else:
-        if kwargs.get('page'):
-            args = dict(page=kwargs.get('page', 1),
-                        per_page=kwargs.get('per_page', 50))
-            endpoint = endpoint + '/?' + urllib.parse.urlencode(args)
+        args = dict(page=kwargs.get('page', 1),
+                    per_page=kwargs.get('per_page', 100))
+        endpoint = endpoint + '/?' + urllib.parse.urlencode(args)
     headers = {
         'Authorization': 'Bearer {}'.format(TOKEN),
         'Content-Type': 'application/json',
@@ -40,9 +39,12 @@ def get_crypto_payments(id=None, *args, **kwargs):
         pass
 
     json_response = response.json()
+    if not kwargs.get('all', False):
+        return json_response
+
     next_page = json_response['meta'].get('next_page')
     if next_page != None:
-        r = get_crypto_payments(page=next_page)
+        r = get_crypto_payments(page=next_page, all=kwargs.get('all'))
         r.pop('meta')
         json_response['crypto-payments'] += r.get('crypto-payments')
 
