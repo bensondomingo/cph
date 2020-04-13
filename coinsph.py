@@ -3,7 +3,7 @@ import urllib
 import json
 from pprint import pprint
 
-from cph.secrets import TOKEN
+from .secrets import TOKEN
 
 # Hardcoded keys to reduce processing load from extracting it on the
 # response.
