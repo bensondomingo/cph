@@ -18,6 +18,30 @@ TRANSACTION_FIELDS = ['entry_type', 'transaction_id', 'created_at', 'amount',
                       'order_fee']
 
 
+def get_sell_order(id=None, *args, **kwargs):
+    endpoint = 'https://api.coins.asia/v1/sellorder'
+    if id:
+        endpoint += f'/{id}/'
+    else:
+        params = dict(limit=kwargs.get('limit', 10),
+                      offset=kwargs.get('offset', 0))
+        endpoint = endpoint + '?' + urllib.parse.urlencode(params)
+    
+    headers = {
+        'Authorization': 'Bearer {}'.format(TOKEN),
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
+    response = requests.get(url=endpoint, headers=headers)
+    try:
+        assert(response.status_code == 200)
+    except AssertionError:
+        # TODO: implement error handling
+        pass
+    return response.json()
+
+
+
 def get_crypto_payments(id=None, *args, **kwargs):
     endpoint = 'https://coins.ph/api/v3/crypto-payments'
     if id:
