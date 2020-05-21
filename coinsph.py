@@ -18,8 +18,8 @@ TRANSACTION_FIELDS = ['entry_type', 'transaction_id', 'created_at', 'amount',
                       'order_fee']
 
 
-def get_sell_order(id=None, *args, **kwargs):
-    endpoint = 'https://api.coins.asia/v1/sellorder'
+def fetch_orders(type, id=None, *args, **kwargs):
+    endpoint = f'https://api.coins.asia/v1/{type}'
     if id:
         endpoint += f'/{id}/'
     else:
@@ -39,7 +39,6 @@ def get_sell_order(id=None, *args, **kwargs):
         # TODO: implement error handling
         pass
     return response.json()
-
 
 
 def get_crypto_payments(id=None, *args, **kwargs):
