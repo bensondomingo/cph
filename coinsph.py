@@ -1,7 +1,6 @@
 import requests
 import urllib
 import json
-from pprint import pprint
 
 from .secrets import TOKEN
 
@@ -26,7 +25,6 @@ def fetch_orders(type, id=None, *args, **kwargs):
         params = dict(limit=kwargs.get('limit', 10),
                       offset=kwargs.get('offset', 0))
         endpoint = endpoint + '?' + urllib.parse.urlencode(params)
-    
     headers = {
         'Authorization': 'Bearer {}'.format(TOKEN),
         'Content-Type': 'application/json',
@@ -66,7 +64,7 @@ def get_crypto_payments(id=None, *args, **kwargs):
         return json_response
 
     next_page = json_response['meta'].get('next_page')
-    if next_page != None:
+    if next_page is not None:
         r = get_crypto_payments(page=next_page, all=kwargs.get('all'))
         r.pop('meta')
         json_response['crypto-payments'] += r.get('crypto-payments')
