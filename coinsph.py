@@ -1,8 +1,11 @@
+from .secrets import TOKEN
+import logging
 import requests
 import urllib
 import json
 
-from .secrets import TOKEN
+logger = logging.getLogger(__name__)
+
 
 # Hardcoded keys to reduce processing load from extracting it on the
 # response.
@@ -16,27 +19,70 @@ TRANSACTION_FIELDS = ['entry_type', 'transaction_id', 'created_at', 'amount',
                       'exchange_currency', 'exchange_rate', 'status',
                       'order_fee']
 
+headers = {
+    'Authorization': 'Bearer {}'.format(TOKEN),
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+}
+
+
+def fetch(method, url, data=None):
+    resp = None
+    logger.info('Sending %s request to %s', method, url)
+    if method == 'GET':
+        try:
+            resp = requests.get(url, headers=headers)
+        except Exception as e:
+            logging.exception(
+                'An error occured during %s request to %s', method, url)
+            raise e
+    elif method == 'POST':
+        try:
+            resp = requests.post(url, data=data, headers=headers)
+        except Exception as e:
+            logging.exception(
+                'An error occured during %s request to %s with data %s',
+                method, url, data)
+            raise e
+    return resp
+
 
 def fetch_orders(type, id=None, *args, **kwargs):
     endpoint = f'https://api.coins.asia/v1/{type}'
     if id:
         endpoint += f'/{id}/'
     else:
-        params = dict(limit=kwargs.get('limit', 10),
-                      offset=kwargs.get('offset', 0))
+        params = kwargs
+        params.setdefault('limit', 10)
+        params.setdefault('offset', 0)
         endpoint = endpoint + '?' + urllib.parse.urlencode(params)
-    headers = {
-        'Authorization': 'Bearer {}'.format(TOKEN),
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    }
-    response = requests.get(url=endpoint, headers=headers)
+    resp = fetch('GET', endpoint)
+
     try:
-        assert(response.status_code == 200)
-    except AssertionError:
-        # TODO: implement error handling
-        pass
-    return response.json()
+        assert(resp.status_code == 200)
+    except AssertionError as e:
+        logger.exception(
+            ('An error occured while sending GET request to %s. Expecting '
+             'status code of 200 but %d is received'),
+            endpoint, resp.status_code)
+        raise e
+
+    return resp.json()
+
+
+def fetch_crypto_payment(order_id):
+    endpoint = ('https://coins.ph/api/v3/crypto-payments'
+                f'?reference__order_id={order_id}')
+    resp = fetch('GET', endpoint)
+    try:
+        assert(resp.status_code == 200)
+    except AssertionError as e:
+        logger.exception(
+            ('An error occured while sending GET request to %s. Expecting '
+             'status code of 200 but %d is received'),
+            endpoint, resp.status_code)
+        raise e
+    return resp.json()
 
 
 def get_crypto_payments(id=None, *args, **kwargs):
@@ -121,3 +167,7 @@ def get_account():
         pass
     assert(response.status_code == 200)
     return json.loads(response.text)
+
+
+class ThrottleError(BaseException):
+    pass
