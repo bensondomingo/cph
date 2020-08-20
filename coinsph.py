@@ -7,6 +7,17 @@ import json
 logger = logging.getLogger(__name__)
 
 
+class InvalidPhoneNumberError(Exception):
+    def __init__(self, phone_number, errors, *args, **kwargs):
+        self.phone_number = phone_number
+        super().__init__('phone_number', phone_number, errors, *args, **kwargs)
+
+
+# class InvalidLoadAmountError(RequestNewOrderError):
+#     def __init__(self, amount, errors, *args, **kwargs):
+#         super().__init__('amount', amount, errors, *args, **kwargs)
+
+
 # Hardcoded keys to reduce processing load from extracting it on the
 # response.
 TRANSACTION_FIELDS_LEN = 22
@@ -21,7 +32,7 @@ TRANSACTION_FIELDS = ['entry_type', 'transaction_id', 'created_at', 'amount',
 
 headers = {
     'Authorization': 'Bearer {}'.format(TOKEN),
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json;charset=UTF-8',
     'Accept': 'application/json'
 }
 
@@ -38,7 +49,7 @@ def fetch(method, url, data=None):
             raise e
     elif method == 'POST':
         try:
-            resp = requests.post(url, data=data, headers=headers)
+            resp = requests.post(url, data=json.dumps(data), headers=headers)
         except Exception as e:
             logging.exception(
                 'An error occured during %s request to %s with data %s',
@@ -47,10 +58,30 @@ def fetch(method, url, data=None):
     return resp
 
 
-def fetch_orders(type, id=None, *args, **kwargs):
-    endpoint = f'https://api.coins.asia/v1/{type}'
-    if id:
+def fetch_orders(order_type, id=None, *args, **kwargs):
+    endpoint = f'https://api.coins.asia/v1/{order_type}'
+    if id is not None:
         endpoint += f'/{id}/'
+        if kwargs:
+            endpoint += f'?{urllib.parse.urlencode(kwargs)}'
+    elif id is None and kwargs:
+        endpoint += f'?{urllib.parse.urlencode(kwargs)}'
+    else:
+        params = kwargs
+        params.setdefault('limit', 10)
+        params.setdefault('offset', 0)
+        endpoint = endpoint + '?' + urllib.parse.urlencode(params)
+    return fetch('GET', endpoint)
+
+
+def _fetch_orders(typ, id=None, *args, **kwargs):
+    endpoint = f'https://api.coins.asia/v1/{typ}'
+    if id is not None:
+        endpoint += f'/{id}/'
+        if kwargs:
+            endpoint += f'?{urllib.parse.urlencode(kwargs)}'
+    elif id is None and kwargs:
+        endpoint += f'?{urllib.parse.urlencode(kwargs)}'
     else:
         params = kwargs
         params.setdefault('limit', 10)
@@ -70,9 +101,70 @@ def fetch_orders(type, id=None, *args, **kwargs):
     return resp.json()
 
 
+def request_new_order(data):
+    endpoint = 'https://coins.ph/api/v2/sellorder'
+    return fetch('POST', endpoint, data=data)
+
+    # if resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY:
+    #     errors = resp.json().get('errors')
+    #     raise RequestNewOrderError(data, errors)
+
+    # try:
+    #     assert(resp.status_code == 201)
+    # except AssertionError as e:
+    #     logger.exception(
+    #         ('An error occured while sending POST request to %s. Expecting '
+    #          'status code of 201 but %d is received'),
+    #         endpoint, resp.status_code)
+    #     raise e
+
+    # return resp.json()
+
+
 def fetch_crypto_payment(order_id):
     endpoint = ('https://coins.ph/api/v3/crypto-payments'
                 f'?reference__order_id={order_id}')
+    resp = fetch('GET', endpoint)
+    try:
+        assert(resp.status_code == 200)
+    except AssertionError as e:
+        logger.exception(
+            ('An error occured while sending GET request to %s. Expecting '
+             'status code of 200 but %d is received'),
+            endpoint, resp.status_code)
+        raise e
+    return resp.json()
+
+
+def fetch_outlet_details(outlet_id):
+    endpoint = f'https://api.coins.asia/v1/payout-outlets/{outlet_id}'
+    resp = fetch('GET', endpoint)
+    try:
+        assert(resp.status_code == 200)
+    except AssertionError as e:
+        logger.exception(
+            ('An error occured while sending GET request to %s. Expecting '
+             'status code of 200 but %d is received'),
+            endpoint, resp.status_code)
+        raise e
+    return resp.json()
+
+
+def fetch_outlet_data(phone_number):
+    """ Phone number must include country code. i.e +639XXXXXXXXX """
+    encoded_arg = urllib.parse.quote(phone_number)
+    endpoint = f'https://api.coins.asia/v4/payout-outlets/?language=en&per_page=100&recipient_info={encoded_arg}&recipient_type=msisdn'  # noqa: E501
+    try:
+        resp = fetch('GET', endpoint)
+    except Exception as e:
+        # Handle edge case exceptions here
+        raise e
+
+    return resp
+
+
+def fetch_mobile_load_payout_outlets():
+    endpoint = 'https://api.coins.asia/v4/payout-outlets/?language=en&per_page=1000&outlet_category=mobile-load&region=PH&provider_region=PH&recipient_type=msisdn'  # noqa: E501
     resp = fetch('GET', endpoint)
     try:
         assert(resp.status_code == 200)
