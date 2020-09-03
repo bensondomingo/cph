@@ -124,16 +124,7 @@ def request_new_order(data):
 def fetch_crypto_payment(order_id):
     endpoint = ('https://coins.ph/api/v3/crypto-payments'
                 f'?reference__order_id={order_id}')
-    resp = fetch('GET', endpoint)
-    try:
-        assert(resp.status_code == 200)
-    except AssertionError as e:
-        logger.exception(
-            ('An error occured while sending GET request to %s. Expecting '
-             'status code of 200 but %d is received'),
-            endpoint, resp.status_code)
-        raise e
-    return resp.json()
+    return fetch('GET', endpoint)
 
 
 def fetch_outlet_details(outlet_id):
@@ -259,7 +250,3 @@ def get_account():
         pass
     assert(response.status_code == 200)
     return json.loads(response.text)
-
-
-class ThrottleError(BaseException):
-    pass
