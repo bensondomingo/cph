@@ -1,8 +1,9 @@
-from .secrets import TOKEN
 import logging
 import requests
 import urllib
 import json
+
+from eload.api_keys import CPH_TOKEN as TOKEN
 
 logger = logging.getLogger(__name__)
 
@@ -11,11 +12,6 @@ class InvalidPhoneNumberError(Exception):
     def __init__(self, phone_number, errors, *args, **kwargs):
         self.phone_number = phone_number
         super().__init__('phone_number', phone_number, errors, *args, **kwargs)
-
-
-# class InvalidLoadAmountError(RequestNewOrderError):
-#     def __init__(self, amount, errors, *args, **kwargs):
-#         super().__init__('amount', amount, errors, *args, **kwargs)
 
 
 # Hardcoded keys to reduce processing load from extracting it on the
