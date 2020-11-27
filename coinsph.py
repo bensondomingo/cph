@@ -28,7 +28,8 @@ TRANSACTION_FIELDS = ['entry_type', 'transaction_id', 'created_at', 'amount',
 
 headers = {
     'Authorization': 'Bearer {}'.format(TOKEN),
-    'Content-Type': 'application/json;charset=UTF-8',
+    'Content-Type': 'application/json',
+    'User-Agent': 'LoadNinja/1.0 WebApp',
     'Accept': 'application/json'
 }
 
